@@ -12,7 +12,7 @@ const passport = require('passport');
 require('dotenv').config({ path: '.env.local' });
 
 const { connectDB } = require('./src/lib/db');
-const { redisClient } = require('./src/lib/redis');
+const { redisClient, ensureRedisConnection } = require('./src/lib/redis');
 const { initializeSocket } = require('./src/lib/socket');
 
 const dev = process.env.NODE_ENV !== 'production';
@@ -29,9 +29,13 @@ app.prepare().then(async () => {
   // Connect to MongoDB
   await connectDB();
   
-  // Connect to Redis
-  await redisClient.connect();
-  console.log('✅ Redis connected');
+  // Connect to Redis with improved error handling
+  await ensureRedisConnection();
+  if (redisClient && redisClient.isOpen) {
+    console.log('✅ Redis connected');
+  } else {
+    console.warn('⚠️  Redis connection failed, continuing without cache');
+  }
 
   // Initialize Socket.IO
   const io = initializeSocket(httpServer);

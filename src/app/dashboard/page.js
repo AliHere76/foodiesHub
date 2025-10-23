@@ -46,12 +46,6 @@ export default function Dashboard() {
     }
   };
 
-  const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    localStorage.removeItem('user');
-    router.push('/');
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-orange-50 to-amber-50 flex items-center justify-center">
@@ -75,115 +69,91 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-orange-50 to-amber-50">
-      {/* Header */}
-      <div className="bg-white/95 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50 shadow-sm">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
-              FoodiesHub
-            </h1>
-            <div className="flex items-center gap-4">
-              <span className="text-gray-600">
-                Welcome, <span className="text-gray-900 font-semibold">{user?.name}</span>
-              </span>
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-all border border-red-200 font-medium"
-              >
-                Logout
-              </button>
+      {/* Hero Section */}
+      <div className="bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 border-b border-orange-200">
+        <div className="container mx-auto px-6 py-12">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl md:text-5xl font-bold text-white mb-3">
+                Welcome back, {user?.name}! 👋
+              </h1>
+              <p className="text-orange-100 text-lg">
+                {user?.role === 'customer' 
+                  ? 'Ready to order something delicious?' 
+                  : 'Manage your restaurant and track orders'}
+              </p>
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Navigation */}
-      <div className="bg-white/80 border-b border-gray-200">
-        <div className="container mx-auto px-6">
-          <nav className="flex gap-8">
-            <Link
-              href="/dashboard"
-              className="py-4 border-b-2 border-orange-500 text-orange-600 font-semibold"
-            >
-              Dashboard
-            </Link>
             {user?.role === 'customer' && (
               <Link
                 href="/restaurants"
-                className="py-4 border-b-2 border-transparent hover:border-gray-300 text-gray-600 hover:text-gray-900 transition-colors font-medium"
+                className="hidden md:flex items-center gap-2 px-6 py-3 bg-white hover:bg-gray-50 text-orange-600 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
               >
-                Restaurants
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                Browse Restaurants
               </Link>
             )}
-            <Link
-              href="/orders"
-              className="py-4 border-b-2 border-transparent hover:border-gray-300 text-gray-600 hover:text-gray-900 transition-colors font-medium"
-            >
-              Orders
-            </Link>
-            {user?.role === 'restaurant' && (
-              <Link
-                href={`/metrics?tenantId=${user.tenantId}`}
-                className="py-4 border-b-2 border-transparent hover:border-gray-300 text-gray-600 hover:text-gray-900 transition-colors font-medium"
-              >
-                Analytics
-              </Link>
-            )}
-          </nav>
+          </div>
         </div>
       </div>
 
       {/* Content */}
       <div className="container mx-auto px-6 py-8">
         {/* Stats Cards */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200 hover:border-orange-300 hover:shadow-xl transition-all">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <div className="group bg-white rounded-2xl p-6 border border-gray-200 hover:border-orange-300 hover:shadow-2xl transition-all duration-300">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm mb-1 font-medium">Total Orders</p>
-                <p className="text-4xl font-bold text-gray-900">
+                <p className="text-gray-500 text-sm mb-2 font-medium uppercase tracking-wide">Total Orders</p>
+                <p className="text-5xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
                   {orders.length}
                 </p>
+                <p className="text-sm text-gray-600 mt-2">All time orders</p>
               </div>
-              <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center text-white shadow-lg">
-                <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                 </svg>
               </div>
             </div>
           </div>
 
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200 hover:border-orange-300 hover:shadow-xl transition-all">
+          <div className="group bg-white rounded-2xl p-6 border border-gray-200 hover:border-green-300 hover:shadow-2xl transition-all duration-300">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm mb-1 font-medium">Active Orders</p>
-                <p className="text-4xl font-bold text-gray-900">
+                <p className="text-gray-500 text-sm mb-2 font-medium uppercase tracking-wide">Active Orders</p>
+                <p className="text-5xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
                   {orders.filter(o => ['pending', 'confirmed', 'preparing'].includes(o.status)).length}
                 </p>
+                <p className="text-sm text-gray-600 mt-2">In progress</p>
               </div>
-              <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center text-white shadow-lg">
-                <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
               </div>
             </div>
           </div>
 
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200 hover:border-orange-300 hover:shadow-xl transition-all">
+          <div className="group bg-white rounded-2xl p-6 border border-gray-200 hover:border-blue-300 hover:shadow-2xl transition-all duration-300">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm mb-1 font-medium">
+                <p className="text-gray-500 text-sm mb-2 font-medium uppercase tracking-wide">
                   {user?.role === 'customer' ? 'Restaurants' : 'Completed'}
                 </p>
-                <p className="text-4xl font-bold text-gray-900">
+                <p className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
                   {user?.role === 'customer' 
                     ? restaurants.length 
                     : orders.filter(o => o.status === 'delivered').length
                   }
                 </p>
+                <p className="text-sm text-gray-600 mt-2">
+                  {user?.role === 'customer' ? 'Available' : 'Delivered'}
+                </p>
               </div>
-              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center text-white shadow-lg">
-                <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
@@ -192,21 +162,42 @@ export default function Dashboard() {
         </div>
 
         {/* Recent Orders */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200 shadow-lg">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Recent Orders</h2>
+        <div className="bg-white rounded-2xl p-6 md:p-8 border border-gray-200 shadow-lg">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-3xl font-bold text-gray-900">Recent Orders</h2>
+              <p className="text-gray-500 mt-1">Track your latest orders</p>
+            </div>
+            {orders.length > 0 && (
+              <Link
+                href="/orders"
+                className="flex items-center gap-2 px-4 py-2 text-orange-600 hover:bg-orange-50 rounded-lg font-semibold transition-all"
+              >
+                View All
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            )}
+          </div>
+
           {orders.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="text-center py-20">
+              <div className="w-32 h-32 bg-gradient-to-br from-orange-100 to-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg className="w-16 h-16 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                 </svg>
               </div>
-              <p className="text-gray-600 text-lg mb-6">No orders yet</p>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">No Orders Yet</h3>
+              <p className="text-gray-600 mb-8 text-lg">Start your food journey by placing your first order!</p>
               {user?.role === 'customer' && (
                 <Link
                   href="/restaurants"
-                  className="inline-block px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-orange-500/30 transition-all"
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-semibold hover:shadow-2xl hover:shadow-orange-500/40 transition-all transform hover:scale-105"
                 >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                  </svg>
                   Browse Restaurants
                 </Link>
               )}
@@ -216,27 +207,59 @@ export default function Dashboard() {
               {orders.slice(0, 5).map((order) => (
                 <div
                   key={order._id}
-                  className="bg-gray-50/50 border border-gray-200 rounded-xl p-6 hover:border-orange-300 hover:shadow-md transition-all"
+                  className="group bg-gradient-to-br from-gray-50 to-orange-50/30 border-2 border-gray-200 rounded-2xl p-6 hover:border-orange-300 hover:shadow-xl transition-all duration-300"
                 >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-semibold text-gray-900 text-lg mb-1">
-                        Order #{order.orderNumber}
-                      </p>
-                      <p className="text-gray-600 mb-2">
-                        {order.restaurantId?.name || 'Restaurant'}
-                      </p>
-                      <p className="text-sm text-gray-500 font-medium">
-                        {order.items.length} items • ${order.totalAmount.toFixed(2)}
-                      </p>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center text-white shadow-lg">
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="font-bold text-gray-900 text-xl">
+                            Order #{order.orderNumber}
+                          </p>
+                          <p className="text-gray-600 font-medium">
+                            {order.restaurantId?.name || 'Restaurant'}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-wrap items-center gap-4 ml-15 mt-3">
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                          </svg>
+                          <span className="text-sm font-medium">{order.items.length} items</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span className="text-sm font-medium">
+                            {new Date(order.createdAt).toLocaleDateString('en-US', { 
+                              month: 'short', 
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <span className={`inline-block px-4 py-2 rounded-lg text-sm font-semibold border ${getStatusColor(order.status)}`}>
+                    
+                    <div className="flex sm:flex-col items-center sm:items-end gap-3">
+                      <span className={`px-4 py-2 rounded-xl text-sm font-bold border-2 shadow-md ${getStatusColor(order.status)}`}>
                         {order.status.replace('_', ' ').toUpperCase()}
                       </span>
-                      <p className="text-xs text-gray-500 mt-2">
-                        {new Date(order.createdAt).toLocaleDateString()}
-                      </p>
+                      <div className="text-right">
+                        <p className="text-sm text-gray-500 font-medium">Total Amount</p>
+                        <p className="text-2xl font-bold text-orange-600">
+                          ${order.totalAmount.toFixed(2)}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -19,6 +19,8 @@ export async function POST(request) {
   try {
     const { email, password } = body;
 
+    console.log('Login attempt for email:', email);
+
     // Rate limiting
     const clientIp = request.headers.get('x-forwarded-for') || 'unknown';
     const rateLimit = await rateLimiter(clientIp, 10, 60000);
@@ -32,6 +34,7 @@ export async function POST(request) {
 
     // Validation
     if (!email || !password) {
+      console.log('Missing email or password');
       return NextResponse.json(
         { success: false, message: 'Email and password are required' },
         { status: 400 }
@@ -43,7 +46,10 @@ export async function POST(request) {
     // Find user with password
     const user = await User.findOne({ email }).select('+password');
     
+    console.log('User found:', user ? 'Yes' : 'No');
+    
     if (!user || !user.password) {
+      console.log('User not found or no password set');
       return NextResponse.json(
         { success: false, message: 'Invalid credentials' },
         { status: 401 }
@@ -53,7 +59,10 @@ export async function POST(request) {
     // Check password
     const isPasswordValid = await user.comparePassword(password);
     
+    console.log('Password valid:', isPasswordValid);
+    
     if (!isPasswordValid) {
+      console.log('Invalid password');
       return NextResponse.json(
         { success: false, message: 'Invalid credentials' },
         { status: 401 }

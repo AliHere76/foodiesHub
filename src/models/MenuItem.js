@@ -24,7 +24,7 @@ const menuItemSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    enum: ['appetizer', 'main', 'dessert', 'beverage', 'side'],
+    enum: ['appetizers', 'main course', 'desserts', 'beverages', 'salads', 'soups', 'appetizer', 'main', 'dessert', 'beverage', 'side'],
   },
   price: {
     type: Number,
@@ -48,7 +48,7 @@ const menuItemSchema = new mongoose.Schema({
   },
   spiceLevel: {
     type: String,
-    enum: ['none', 'mild', 'medium', 'hot'],
+    enum: ['none', 'mild', 'medium', 'hot', 'extra hot', ''],
     default: 'none',
   },
   preparationTime: {

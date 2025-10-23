@@ -79,7 +79,13 @@ export default function Register() {
       const data = await response.json();
 
       if (data.success) {
+        // Store both user and token in localStorage
         localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('token', data.token);
+        
+        // Dispatch custom event to notify Navbar of user change
+        window.dispatchEvent(new Event('userChanged'));
+        
         router.push('/dashboard');
       } else {
         setError(data.message || 'Registration failed');

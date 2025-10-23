@@ -1,19 +1,42 @@
 const { verifyToken } = require('./auth');
-const { redisClient } = require('./redis');
+const { redisClient, ensureRedisConnection } = require('./redis');
 
 // Authentication middleware
 async function authenticateToken(req) {
-  const token = req.cookies?.token || req.headers.authorization?.split(' ')[1];
+  // Try to get token from different sources
+  let token = null;
+  
+  // 1. Try to get from cookies
+  try {
+    const cookies = require('next/headers').cookies;
+    const cookieStore = cookies();
+    token = cookieStore.get('token')?.value;
+  } catch (e) {
+    // If cookies() is not available, try req.cookies
+    token = req.cookies?.token;
+  }
+  
+  // 2. If not in cookies, try Authorization header
+  if (!token) {
+    const authHeader = req.headers.get?.('authorization') || req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    }
+  }
 
   if (!token) {
+    console.log('❌ No token found in request');
     return { authenticated: false, error: 'No token provided' };
   }
 
   const decoded = verifyToken(token);
   
   if (!decoded) {
+    console.log('❌ Invalid token');
     return { authenticated: false, error: 'Invalid token' };
   }
+
+  console.log('✅ Token validated for user:', decoded.userId, 'role:', decoded.role);
 
   return { 
     authenticated: true, 
@@ -45,6 +68,9 @@ function authorize(...roles) {
 // Rate limiter using Redis
 async function rateLimiter(identifier, maxRequests = 100, windowMs = 60000, tenantId = null) {
   try {
+    // Ensure Redis connection
+    await ensureRedisConnection();
+    
     // If Redis is not connected, allow the request (fail open)
     if (!redisClient || !redisClient.isOpen) {
       console.warn('Redis not connected, rate limiting disabled');

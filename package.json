@@ -7,7 +7,14 @@
     "build": "next build",
     "start": "NODE_ENV=production node server.js",
     "lint": "next lint",
-    "kafka-consumer": "node kafka-consumer.js"
+    "kafka-consumer": "node kafka-consumer.js",
+    "check:services": "node scripts/check-all.js",
+    "check:users": "node scripts/check-users.js",
+    "test:kafka": "node scripts/test-kafka.js",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:restart": "docker-compose restart",
+    "docker:logs": "docker-compose logs -f"
   },
   "dependencies": {
     "@socket.io/redis-adapter": "^8.3.0",
@@ -34,7 +41,7 @@
     "react-dom": "^18",
     "redis": "^4.6.13",
     "socket.io": "^4.7.5",
-    "socket.io-client": "^4.7.5",
+    "socket.io-client": "^4.8.1",
     "socket.io-redis": "^6.1.1"
   },
   "devDependencies": {

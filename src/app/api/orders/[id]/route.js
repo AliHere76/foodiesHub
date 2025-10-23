@@ -63,7 +63,7 @@ export async function PATCH(request, { params }) {
   try {
     const auth = await authenticateToken(request);
     
-    if (!auth.authenticated || auth.user.role !== 'restaurant') {
+    if (!auth.authenticated) {
       return NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
@@ -91,8 +91,30 @@ export async function PATCH(request, { params }) {
       );
     }
 
-    // Check tenant scope
-    if (!ensureTenantScope(auth.user, order.tenantId.toString())) {
+    // Authorization checks based on role
+    if (auth.user.role === 'restaurant') {
+      // Restaurant can update any order in their tenant
+      if (!ensureTenantScope(auth.user, order.tenantId.toString())) {
+        return NextResponse.json(
+          { success: false, message: 'Unauthorized' },
+          { status: 403 }
+        );
+      }
+    } else if (auth.user.role === 'customer') {
+      // Customer can only mark their own orders as 'delivered'
+      if (order.customerId.toString() !== auth.user.userId) {
+        return NextResponse.json(
+          { success: false, message: 'Unauthorized' },
+          { status: 403 }
+        );
+      }
+      if (status !== 'delivered' || order.status !== 'out_for_delivery') {
+        return NextResponse.json(
+          { success: false, message: 'Customers can only confirm delivery of orders that are out for delivery' },
+          { status: 403 }
+        );
+      }
+    } else {
       return NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 403 }
@@ -115,13 +137,23 @@ export async function PATCH(request, { params }) {
     order.status = status;
     await order.save();
 
+    // Populate order data for response
+    const populatedOrder = await Order.findById(order._id)
+      .populate('restaurantId', 'name logo phone')
+      .populate('customerId', 'name email phone')
+      .populate('items.menuItem', 'name image')
+      .lean();
+
     // Publish update to Kafka
     try {
       await kafkaProducer.connect();
       await kafkaProducer.publishOrderUpdate({
-        _id: order._id,
-        tenantId: order.tenantId,
+        _id: String(order._id),
+        tenantId: String(order.tenantId),
         status: order.status,
+        customerId: String(order.customerId),
+        restaurantId: String(order.restaurantId),
+        totalAmount: Number(order.totalAmount),
       });
     } catch (kafkaError) {
       console.error('Failed to publish order update:', kafkaError);
@@ -129,15 +161,16 @@ export async function PATCH(request, { params }) {
 
     // Emit real-time update via Socket.IO
     emitOrderUpdate(order.tenantId.toString(), order._id.toString(), {
-      orderId: order._id,
+      orderId: order._id.toString(),
       status: order.status,
       updatedAt: order.updatedAt,
+      order: populatedOrder,
     });
 
     return NextResponse.json({
       success: true,
       message: 'Order status updated',
-      data: order,
+      order: populatedOrder,
     });
   } catch (error) {
     console.error('Update order error:', error);

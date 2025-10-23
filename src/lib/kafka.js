@@ -22,51 +22,60 @@ const kafkaProducer = {
 
   async publishOrderEvent(order) {
     try {
+      // Ensure all values are properly converted to strings or primitives
+      const eventData = {
+        eventType: 'order_created',
+        tenantId: String(order.tenantId),
+        orderId: String(order._id),
+        restaurantId: String(order.restaurantId),
+        customerId: String(order.customerId),
+        totalAmount: Number(order.totalAmount),
+        status: String(order.status),
+        timestamp: new Date().toISOString(),
+      };
+
       await producer.send({
         topic: 'order_events',
         messages: [
           {
-            key: order.tenantId,
-            value: JSON.stringify({
-              eventType: 'order_created',
-              tenantId: order.tenantId,
-              orderId: order._id,
-              restaurantId: order.restaurantId,
-              customerId: order.customerId,
-              totalAmount: order.totalAmount,
-              status: order.status,
-              timestamp: new Date().toISOString(),
-            }),
+            key: String(order.tenantId),
+            value: JSON.stringify(eventData),
           },
         ],
       });
       console.log(`📤 Order event published for tenant ${order.tenantId}`);
     } catch (error) {
       console.error('Error publishing order event:', error);
-      throw error;
+      // Don't throw - let order creation succeed even if Kafka fails
     }
   },
 
   async publishOrderUpdate(order) {
     try {
+      // Ensure all values are properly converted to strings or primitives
+      const eventData = {
+        eventType: 'order_updated',
+        tenantId: String(order.tenantId),
+        orderId: String(order._id),
+        customerId: String(order.customerId),  // ✅ Include customerId
+        restaurantId: String(order.restaurantId),  // ✅ Include restaurantId
+        status: String(order.status),
+        timestamp: new Date().toISOString(),
+      };
+
       await producer.send({
         topic: 'order_events',
         messages: [
           {
-            key: order.tenantId,
-            value: JSON.stringify({
-              eventType: 'order_updated',
-              tenantId: order.tenantId,
-              orderId: order._id,
-              status: order.status,
-              timestamp: new Date().toISOString(),
-            }),
+            key: String(order.tenantId),
+            value: JSON.stringify(eventData),
           },
         ],
       });
       console.log(`📤 Order update published for tenant ${order.tenantId}`);
     } catch (error) {
       console.error('Error publishing order update:', error);
+      // Don't throw - let order update succeed even if Kafka fails
     }
   },
 

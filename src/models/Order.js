@@ -108,6 +108,6 @@ orderSchema.pre('save', async function(next) {
 // Compound indexes for efficient queries
 orderSchema.index({ tenantId: 1, status: 1, createdAt: -1 });
 orderSchema.index({ customerId: 1, createdAt: -1 });
-orderSchema.index({ orderNumber: 1 });
+// Removed duplicate orderNumber index (already set as unique in schema)
 
 module.exports = mongoose.models.Order || mongoose.model('Order', orderSchema);

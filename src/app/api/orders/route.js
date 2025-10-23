@@ -36,6 +36,7 @@ export async function GET(request) {
     return NextResponse.json({
       success: true,
       count: orders.length,
+      orders: orders,
       data: orders,
     });
   } catch (error) {
@@ -49,14 +50,20 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    console.log('📝 Attempting to create order...');
     const auth = await authenticateToken(request);
     
+    console.log('🔐 Auth result:', auth);
+    
     if (!auth.authenticated || auth.user.role !== 'customer') {
+      console.log('❌ Unauthorized:', auth.error || 'Not a customer');
       return NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
       );
     }
+
+    console.log('✅ User authenticated:', auth.user);
 
     // Rate limiting per user
     const rateLimit = await rateLimiter(
@@ -167,10 +174,10 @@ export async function POST(request) {
     try {
       await kafkaProducer.publishOrderEvent({
         _id: order._id,
-        tenantId: restaurant.tenantId,
-        restaurantId: restaurant._id,
-        customerId: auth.user.userId,
-        totalAmount,
+        tenantId: order.tenantId,
+        restaurantId: order.restaurantId,
+        customerId: order.customerId,
+        totalAmount: order.totalAmount,
         status: order.status,
       });
     } catch (kafkaError) {
@@ -178,10 +185,18 @@ export async function POST(request) {
       // Don't fail the order creation if Kafka fails
     }
 
+    // Populate order details before returning
+    const populatedOrder = await Order.findById(order._id)
+      .populate('restaurantId', 'name logo')
+      .populate('customerId', 'name email phone')
+      .populate('items.menuItem', 'name description image')
+      .lean();
+
     return NextResponse.json({
       success: true,
       message: 'Order created successfully',
-      data: order,
+      order: populatedOrder,
+      data: populatedOrder,
     }, { status: 201 });
   } catch (error) {
     console.error('Create order error:', error);

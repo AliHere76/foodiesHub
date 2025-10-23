@@ -1,41 +1,136 @@
 require('dotenv').config({ path: '.env.local' });
 const { consumer } = require('./src/lib/kafka');
-const { redisClient } = require('./src/lib/redis');
+const { redisClient, ensureRedisConnection } = require('./src/lib/redis');
+const io = require('socket.io-client');
+
+// Socket.IO client to emit events to the main server
+let socketClient = null;
+
+async function connectSocketClient() {
+  return new Promise((resolve, reject) => {
+    socketClient = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000', {
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 10,
+    });
+
+    socketClient.on('connect', () => {
+      console.log('✅ Kafka consumer connected to Socket.IO server');
+      resolve();
+    });
+
+    socketClient.on('error', (error) => {
+      console.error('❌ Socket.IO connection error:', error);
+    });
+
+    socketClient.on('disconnect', () => {
+      console.log('⚠️  Kafka consumer disconnected from Socket.IO server');
+    });
+
+    setTimeout(() => {
+      if (!socketClient.connected) {
+        console.warn('⚠️  Socket.IO connection timeout, continuing without real-time events');
+        resolve(); // Continue anyway
+      }
+    }, 5000);
+  });
+}
 
 async function startConsumer() {
   try {
-    // Connect Redis
-    await redisClient.connect();
-    console.log('✅ Redis connected for consumer');
+    console.log('🚀 Starting Kafka Consumer...');
+    
+    // Connect Redis with improved connection handling
+    await ensureRedisConnection();
+    if (redisClient && redisClient.isOpen) {
+      console.log('✅ Redis connected for consumer');
+    } else {
+      console.error('❌ Failed to connect to Redis');
+      process.exit(1);
+    }
+
+    // Connect to Socket.IO server
+    console.log('🔌 Connecting to Socket.IO server...');
+    await connectSocketClient();
 
     // Connect Kafka consumer
+    console.log('📡 Connecting to Kafka...');
     await consumer.connect();
     console.log('✅ Kafka Consumer connected');
 
-    await consumer.subscribe({ topic: 'order_events', fromBeginning: false });
+    console.log('📝 Subscribing to order_events topic...');
+    await consumer.subscribe({ 
+      topic: 'order_events', 
+      fromBeginning: false 
+    });
+    console.log('✅ Subscribed to order_events topic');
 
+    console.log('🎧 Starting message consumption...');
     await consumer.run({
       eachMessage: async ({ topic, partition, message }) => {
-        const event = JSON.parse(message.value.toString());
-        console.log(`📨 Received event: ${event.eventType} for tenant ${event.tenantId}`);
-
         try {
+          const event = JSON.parse(message.value.toString());
+          console.log(`📨 Received event: ${event.eventType} for tenant ${event.tenantId} | Order: ${event.orderId}`);
+
           await processOrderEvent(event);
         } catch (error) {
-          console.error('Error processing message:', error);
+          console.error('❌ Error processing message:', error);
         }
       },
     });
 
     console.log('🎧 Kafka consumer is listening for order events...');
+    console.log('✅ All systems ready! Waiting for events...');
   } catch (error) {
-    console.error('Error starting consumer:', error);
+    console.error('❌ Error starting consumer:', error);
+    console.error('Stack trace:', error.stack);
     process.exit(1);
   }
 }
 
 async function processOrderEvent(event) {
-  const { eventType, tenantId, orderId, timestamp } = event;
+  const { eventType, tenantId, orderId, timestamp, customerId } = event;
+
+  // Emit real-time Socket.IO events
+  if (socketClient && socketClient.connected) {
+    if (eventType === 'order_created') {
+      console.log(`📡 Emitting new_order event for tenant ${tenantId}`);
+      
+      // Notify restaurant
+      socketClient.emit('broadcast_to_tenant', {
+        tenantId,
+        event: 'new_order',
+        data: { orderId, ...event }
+      });
+      
+      // Notify customer
+      if (customerId) {
+        socketClient.emit('broadcast_to_customer', {
+          customerId,
+          event: 'order_update',
+          data: { orderId, status: 'pending', ...event }
+        });
+      }
+    } else if (eventType === 'order_updated') {
+      console.log(`📡 Emitting order_status_change for order ${orderId}`);
+      
+      // Notify restaurant
+      socketClient.emit('broadcast_to_tenant', {
+        tenantId,
+        event: 'order_status_change',
+        data: { orderId, status: event.status, ...event }
+      });
+      
+      // Notify customer
+      if (customerId) {
+        socketClient.emit('broadcast_to_customer', {
+          customerId,
+          event: 'order_status_change',
+          data: { orderId, status: event.status, ...event }
+        });
+      }
+    }
+  }
 
   // Get current minute window
   const minuteKey = `metrics:${tenantId}:${getMinuteWindow(timestamp)}`;
@@ -135,12 +230,22 @@ async function aggregateMetrics(tenantId) {
     { EX: 300 } // 5 minutes TTL
   );
 
+  // Emit metrics update via Socket.IO
+  if (socketClient && socketClient.connected) {
+    socketClient.emit('broadcast_to_tenant', {
+      tenantId,
+      event: 'metrics_update',
+      data: metrics
+    });
+  }
+
   console.log(`📈 Aggregated metrics for tenant ${tenantId}:`, metrics);
 }
 
 // Handle graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('SIGTERM received, shutting down gracefully...');
+  if (socketClient) socketClient.close();
   await consumer.disconnect();
   await redisClient.quit();
   process.exit(0);
@@ -148,6 +253,7 @@ process.on('SIGTERM', async () => {
 
 process.on('SIGINT', async () => {
   console.log('SIGINT received, shutting down gracefully...');
+  if (socketClient) socketClient.close();
   await consumer.disconnect();
   await redisClient.quit();
   process.exit(0);

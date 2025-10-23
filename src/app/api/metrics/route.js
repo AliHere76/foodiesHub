@@ -32,9 +32,58 @@ export async function GET(request) {
     }
 
     // Get current metrics from Redis
-    const metrics = await cacheHelper.get('current', tenantId);
+    // The Kafka consumer stores metrics with key: metrics:${tenantId}:current
+    const { redisClient, ensureRedisConnection } = require('@/lib/redis');
+    
+    try {
+      await ensureRedisConnection();
+      
+      if (!redisClient || !redisClient.isOpen) {
+        console.warn('Redis not connected, returning default metrics');
+        return NextResponse.json({
+          success: true,
+          data: {
+            tenantId,
+            ordersPerMinute: 0,
+            ordersLast10Minutes: 0,
+            totalOrders: 0,
+            avgPrepTime: 0,
+            timestamp: new Date().toISOString(),
+          },
+        });
+      }
 
-    if (!metrics) {
+      // Get metrics directly from Redis
+      const metricsKey = `metrics:${tenantId}:current`;
+      const metricsData = await redisClient.get(metricsKey);
+      
+      console.log(`📊 Fetching metrics for tenant ${tenantId} from key: ${metricsKey}`);
+      console.log(`📊 Metrics data:`, metricsData);
+
+      if (!metricsData) {
+        console.log(`📊 No metrics found, returning defaults`);
+        return NextResponse.json({
+          success: true,
+          data: {
+            tenantId,
+            ordersPerMinute: 0,
+            ordersLast10Minutes: 0,
+            totalOrders: 0,
+            avgPrepTime: 0,
+            timestamp: new Date().toISOString(),
+          },
+        });
+      }
+
+      const metrics = JSON.parse(metricsData);
+      console.log(`✅ Metrics found:`, metrics);
+      
+      return NextResponse.json({
+        success: true,
+        data: metrics,
+      });
+    } catch (redisError) {
+      console.error('Redis error:', redisError);
       return NextResponse.json({
         success: true,
         data: {
@@ -47,11 +96,6 @@ export async function GET(request) {
         },
       });
     }
-
-    return NextResponse.json({
-      success: true,
-      data: metrics,
-    });
   } catch (error) {
     console.error('Get metrics error:', error);
     return NextResponse.json(

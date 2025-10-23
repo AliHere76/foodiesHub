@@ -65,3 +65,71 @@ export async function GET(request, { params }) {
     );
   }
 }
+
+export async function POST(request, { params }) {
+  try {
+    const body = await request.json();
+    const {
+      name,
+      description,
+      category,
+      price,
+      image,
+      isVegetarian,
+      isVegan,
+      isGlutenFree,
+      spiceLevel,
+      preparationTime,
+      ingredients,
+      allergens,
+      isAvailable,
+    } = body;
+
+    await connectDB();
+
+    // Get restaurant to verify it exists and get tenantId
+    const restaurant = await Restaurant.findById(params.id);
+    
+    if (!restaurant) {
+      return NextResponse.json(
+        { success: false, message: 'Restaurant not found' },
+        { status: 404 }
+      );
+    }
+
+    // Create menu item
+    const menuItem = await MenuItem.create({
+      tenantId: restaurant.tenantId,
+      restaurantId: params.id,
+      name,
+      description,
+      category: category.toLowerCase(),
+      price: parseFloat(price),
+      image: image || '',
+      isVegetarian: isVegetarian || false,
+      isVegan: isVegan || false,
+      isGlutenFree: isGlutenFree || false,
+      spiceLevel: spiceLevel ? spiceLevel.toLowerCase() : 'none',
+      preparationTime: preparationTime || 15,
+      ingredients: ingredients || [],
+      allergens: allergens || [],
+      isAvailable: isAvailable !== undefined ? isAvailable : true,
+    });
+
+    // Invalidate cache
+    await cacheHelper.delete(`menu:all`, restaurant.tenantId.toString());
+    await cacheHelper.delete(`menu:${category}`, restaurant.tenantId.toString());
+
+    return NextResponse.json({
+      success: true,
+      data: menuItem,
+      message: 'Menu item created successfully',
+    }, { status: 201 });
+  } catch (error) {
+    console.error('Create menu item error:', error);
+    return NextResponse.json(
+      { success: false, message: 'Internal server error', error: error.message },
+      { status: 500 }
+    );
+  }
+}

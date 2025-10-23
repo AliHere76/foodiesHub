@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 
 export default function Home() {
   const router = useRouter();
@@ -33,33 +34,8 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-orange-50 to-amber-50 text-gray-900">
-      {/* Navigation */}
-      <nav className="fixed w-full z-50 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex justify-between items-center">
-            <div className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
-              FoodiesHub
-            </div>
-            <div className="flex gap-4">
-              <button
-                onClick={() => router.push('/login')}
-                className="px-6 py-2 text-gray-600 hover:text-gray-900 font-medium transition-colors"
-              >
-                Sign In
-              </button>
-              <button
-                onClick={() => router.push('/register')}
-                className="px-6 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-orange-500/30 transition-all transform hover:scale-105"
-              >
-                Get Started
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
-
       {/* Hero Section */}
-      <div className="pt-32 pb-20 px-6">
+      <div className="py-20 px-6">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-16">
             <h1 className="text-6xl md:text-7xl font-bold mb-6 leading-tight text-gray-900">
@@ -73,18 +49,18 @@ export default function Home() {
               Order from the best restaurants in your area. Real-time tracking, fast delivery, and amazing food at your doorstep.
             </p>
             <div className="flex justify-center gap-4">
-              <button
-                onClick={() => router.push('/register')}
+              <Link
+                href="/register"
                 className="px-8 py-4 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl text-lg font-semibold hover:shadow-2xl hover:shadow-orange-500/30 transition-all transform hover:scale-105"
               >
                 Order Now
-              </button>
-              <button
-                onClick={() => router.push('/login')}
+              </Link>
+              <Link
+                href="/restaurants"
                 className="px-8 py-4 bg-white rounded-xl text-lg font-semibold hover:bg-gray-50 transition-all border-2 border-gray-200 text-gray-700 hover:border-orange-300"
               >
-                Sign In
-              </button>
+                Browse Restaurants
+              </Link>
             </div>
           </div>
 
@@ -172,24 +148,14 @@ export default function Home() {
         <div className="container mx-auto max-w-4xl text-center">
           <h2 className="text-4xl font-bold mb-6 text-white">Ready to Order?</h2>
           <p className="text-xl mb-8 text-white/95">Join thousands of satisfied customers enjoying delicious food daily</p>
-          <button
-            onClick={() => router.push('/register')}
-            className="px-10 py-4 bg-white text-orange-600 rounded-xl text-lg font-bold hover:bg-gray-50 transition-all transform hover:scale-105 shadow-2xl"
+          <Link
+            href="/register"
+            className="inline-block px-10 py-4 bg-white text-orange-600 rounded-xl text-lg font-bold hover:bg-gray-50 transition-all transform hover:scale-105 shadow-2xl"
           >
             Sign Up Now - It's Free
-          </button>
+          </Link>
         </div>
       </div>
-
-      {/* Footer */}
-      <footer className="bg-gray-900 border-t border-gray-800 py-12 px-6">
-        <div className="container mx-auto max-w-6xl">
-          <div className="text-center text-gray-300">
-            <p className="mb-2 font-medium">© 2025 FoodiesHub. All rights reserved.</p>
-            <p className="text-sm text-gray-400">Delivering happiness, one meal at a time.</p>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
